@@ -1,0 +1,3 @@
+C:/Users/Lenovo/Desktop/toyc_compiler/build/CMakeFiles/toyc.dir
+C:/Users/Lenovo/Desktop/toyc_compiler/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Lenovo/Desktop/toyc_compiler/build/CMakeFiles/ZERO_CHECK.dir
