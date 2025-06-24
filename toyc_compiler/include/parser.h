@@ -1,19 +1,16 @@
 #pragma once
-#include "lexer.h"
+#include "token.h"
 #include "ast.h"
 #include <vector>
 #include <memory>
-#include <stdexcept>
 
 class Parser {
 public:
-    explicit Parser(const std::vector<Token>& tokens) : tokens(tokens), current(0) {}
-
-    // 入口函数，解析完整程序
-    std::unique_ptr<ASTNode> parse();
+    Parser(const std::vector<Token> &tokens);
+    std::vector<std::unique_ptr<FuncDef>> parseCompUnit();
 
 private:
-    // 表达式解析，返回 Expr 类型指针
+    // 表达式相关
     std::unique_ptr<Expr> parseExpr();
     std::unique_ptr<Expr> parseLOrExpr();
     std::unique_ptr<Expr> parseLAndExpr();
@@ -23,26 +20,26 @@ private:
     std::unique_ptr<Expr> parseUnaryExpr();
     std::unique_ptr<Expr> parsePrimaryExpr();
 
-    // 语句解析，返回 Stmt 类型指针
+    // 语句相关
     std::unique_ptr<Stmt> parseStmt();
-    std::unique_ptr<Stmt> parseBlock();
+    std::unique_ptr<Stmt> parseVarDecl();
     std::unique_ptr<Stmt> parseIfStmt();
     std::unique_ptr<Stmt> parseWhileStmt();
+    std::unique_ptr<Stmt> parseBreakStmt();
+    std::unique_ptr<Stmt> parseContinueStmt();
     std::unique_ptr<Stmt> parseReturnStmt();
-    std::unique_ptr<Stmt> parseDeclOrAssignOrExpr();
+    std::unique_ptr<Stmt> parseAssignOrExprStmt();
+    std::unique_ptr<Block> parseBlock();
 
-    // 函数定义解析
-    std::unique_ptr<ASTNode> parseFuncDef();
-    std::vector<std::unique_ptr<ASTNode>> parseParamList();
+    // 函数定义
+    std::unique_ptr<FuncDef> parseFuncDef();
 
-    // 工具函数
-    const Token& peek() const;
-    const Token& advance();
+    // 工具
+    const Token &peek() const;
+    const Token &advance();
     bool match(TokenType type);
-    bool check(TokenType type) const;
-    bool isAtEnd() const;
-    const Token& expect(TokenType type, const std::string& msg);
+    bool expect(TokenType type, const char *msg);
 
-    const std::vector<Token>& tokens;
+    const std::vector<Token> &tokens;
     size_t current = 0;
 };

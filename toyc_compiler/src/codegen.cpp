@@ -1,8 +1,15 @@
-// codegen.cpp
 #include "codegen.h"
+#include "ast.h"
+#include <iostream>
 #include <cassert>
 
-CodeGen::CodeGen(std::ostream &out) : out(out) {}
+CodeGen::CodeGen(std::ostream &os) : out(os), labelCount(0) {}
+
+void CodeGen::generate(const std::vector<std::unique_ptr<FuncDef>> &funcs) {
+    for (const auto &f : funcs) {
+        genFunc(f.get());
+    }
+}
 
 void CodeGen::emit(const std::string &code) {
     out << "\t" << code << "\n";
@@ -12,43 +19,12 @@ std::string CodeGen::newLabel(const std::string &base) {
     return base + "_" + std::to_string(labelCount++);
 }
 
-void CodeGen::generate(Program *program) {
-    for (auto &func : program->functions) {
-        genFunc(func.get());
-    }
-}
-
-void CodeGen::genFunc(Function *func) {
-    out << func->name << ":\n";
-    emit("addi sp, sp, -128");    // 分配固定栈空间（可根据需要调整）
-    emit("sw ra, 124(sp)");       // 保存返回地址
-
-    localVarOffset.clear();
-    int offset = 0;
-
-    // 参数入栈
-    for (size_t i = 0; i < func->params.size(); ++i) {
-        localVarOffset[func->params[i]] = offset;
-        emit("sw a" + std::to_string(i) + ", " + std::to_string(offset) + "(sp)");
-        offset += 4;
-    }
-
-    // 生成函数体代码
-    for (auto &stmt : func->body) {
-        genStmt(stmt.get());
-    }
-
-    emit("lw ra, 124(sp)");       // 恢复返回地址
-    emit("addi sp, sp, 128");     // 释放栈空间
-    emit("ret");
-}
-
 std::string CodeGen::genExpr(Expr *expr) {
     if (auto num = dynamic_cast<NumberExpr *>(expr)) {
         emit("li a0, " + std::to_string(num->value));
         return "a0";
     } else if (auto var = dynamic_cast<VarExpr *>(expr)) {
-        assert(localVarOffset.count(var->name) && "变量未声明");
+        assert(localVarOffset.count(var->name));
         int offset = localVarOffset[var->name];
         emit("lw a0, " + std::to_string(offset) + "(sp)");
         return "a0";
@@ -57,53 +33,104 @@ std::string CodeGen::genExpr(Expr *expr) {
         emit("mv t0, a0");
         genExpr(bin->rhs.get());
 
-        switch (bin->op) {
-            case '+': emit("add a0, t0, a0"); break;
-            case '-': emit("sub a0, t0, a0"); break;
-            case '*': emit("mul a0, t0, a0"); break;
-            case '/': emit("div a0, t0, a0"); break;
-            case '%': emit("rem a0, t0, a0"); break;
-            case '<': emit("slt a0, t0, a0"); break;
-            case '>': emit("sgt a0, t0, a0"); break;
-            case '=': // == 操作
-                emit("xor a0, t0, a0");
-                emit("seqz a0, a0");
-                break;
-            case '!': // != 操作
-                emit("xor a0, t0, a0");
-                emit("snez a0, a0");
-                break;
-            default:
-                assert(false && "不支持的二元运算符");
+        if (bin->op == "+") {
+            emit("add a0, t0, a0");
+        } else if (bin->op == "-") {
+            emit("sub a0, t0, a0");
+        } else if (bin->op == "*") {
+            emit("mul a0, t0, a0");
+        } else if (bin->op == "/") {
+            emit("div a0, t0, a0");
+        } else if (bin->op == "%") {
+            emit("rem a0, t0, a0");
+        } else {
+            // 省略其他操作符
+        }
+        return "a0";
+    } else if (auto call = dynamic_cast<CallExpr *>(expr)) {
+        for (size_t i = 0; i < call->args.size(); i++) {
+            genExpr(call->args[i].get());
+            emit("mv a" + std::to_string(i), "a0");
+        }
+        emit("call " + call->callee);
+        return "a0";
+    } else if (auto unary = dynamic_cast<UnaryExpr *>(expr)) {
+        genExpr(unary->operand.get());
+        if (unary->op == "-") {
+            emit("neg a0, a0");
+        } else if (unary->op == "!") {
+            emit("seqz a0, a0");
         }
         return "a0";
     }
-
-    assert(false && "未知表达式类型");
-    return "";
+    return "a0";
 }
 
-void CodeGen::genStmt(Stmt *stmt) {
-    if (auto exprStmt = dynamic_cast<ExprStmt *>(stmt)) {
-        genExpr(exprStmt->expr.get());
-    } else if (auto retStmt = dynamic_cast<ReturnStmt *>(stmt)) {
-        if (retStmt->value)
-            genExpr(retStmt->value.get());
-        emit("ret");
-    } else if (auto assignStmt = dynamic_cast<AssignStmt *>(stmt)) {
-        genExpr(assignStmt->value.get());
-        assert(localVarOffset.count(assignStmt->name) && "赋值变量未声明");
-        int offset = localVarOffset[assignStmt->name];
-        emit("sw a0, " + std::to_string(offset) + "(sp)");
-    } else if (auto block = dynamic_cast<Block *>(stmt)) {
-        genBlock(block);
-    } else {
-        assert(false && "不支持的语句类型");
+void CodeGen::genFunc(FuncDef *func) {
+    localVarOffset.clear();
+    int offset = 0;
+
+    out << ".globl " << func->name << "\n";
+    out << func->name << ":\n";
+
+    emit("addi sp, sp, -128"); // 分配栈空间
+
+    // 函数参数入栈映射
+    for (size_t i = 0; i < func->params.size(); i++) {
+        offset -= 4;
+        localVarOffset[func->params[i].name] = offset;
+        emit("sw a" + std::to_string(i) + ", " + std::to_string(offset) + "(sp)");
     }
+
+    genBlock(func->body.get());
+
+    emit("addi sp, sp, 128");
+    emit("ret");
 }
 
 void CodeGen::genBlock(Block *block) {
     for (auto &stmt : block->stmts) {
         genStmt(stmt.get());
+    }
+}
+
+void CodeGen::genStmt(Stmt *stmt) {
+    if (auto decl = dynamic_cast<VarDeclStmt *>(stmt)) {
+        int offset = localVarOffset.size() * -4 - 4;
+        localVarOffset[decl->varName] = offset;
+        genExpr(decl->initExpr.get());
+        emit("sw a0, " + std::to_string(offset) + "(sp)");
+    } else if (auto assign = dynamic_cast<AssignStmt *>(stmt)) {
+        int offset = localVarOffset[assign->varName];
+        genExpr(assign->value.get());
+        emit("sw a0, " + std::to_string(offset) + "(sp)");
+    } else if (auto exprStmt = dynamic_cast<ExprStmt *>(stmt)) {
+        genExpr(exprStmt->expr.get());
+    } else if (auto ret = dynamic_cast<ReturnStmt *>(stmt)) {
+        if (ret->value) genExpr(ret->value.get());
+        emit("addi sp, sp, 128");
+        emit("ret");
+    } else if (auto ifStmt = dynamic_cast<IfStmt *>(stmt)) {
+        std::string elseLabel = newLabel("else");
+        std::string endLabel = newLabel("endif");
+
+        genExpr(ifStmt->cond.get());
+        emit("beqz a0, " + elseLabel);
+        genStmt(ifStmt->thenStmt.get());
+        emit("j " + endLabel);
+        emit(elseLabel + ":");
+        if (ifStmt->elseStmt) genStmt(ifStmt->elseStmt.get());
+        emit(endLabel + ":");
+    } else if (auto whileStmt = dynamic_cast<WhileStmt *>(stmt)) {
+        std::string loopLabel = newLabel("loop");
+        std::string endLabel = newLabel("endloop");
+        emit(loopLabel + ":");
+        genExpr(whileStmt->cond.get());
+        emit("beqz a0, " + endLabel);
+        genStmt(whileStmt->body.get());
+        emit("j " + loopLabel);
+        emit(endLabel + ":");
+    } else if (dynamic_cast<BreakStmt *>(stmt) || dynamic_cast<ContinueStmt *>(stmt)) {
+        // 简化不处理
     }
 }

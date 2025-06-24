@@ -1,17 +1,17 @@
+// parser.cpp
 #include "parser.h"
 #include "ast.h"
+#include "token.h"
 #include <stdexcept>
 
 // 工具函数实现
 const Token &Parser::peek() const {
-    if (current >= tokens.size())
-        throw std::runtime_error("Unexpected EOF");
+    if (current >= tokens.size()) throw std::runtime_error("Unexpected EOF");
     return tokens[current];
 }
 
 const Token &Parser::advance() {
-    if (current >= tokens.size())
-        throw std::runtime_error("Unexpected EOF");
+    if (current >= tokens.size()) throw std::runtime_error("Unexpected EOF");
     return tokens[current++];
 }
 
@@ -23,16 +23,15 @@ bool Parser::match(TokenType type) {
     return false;
 }
 
-bool Parser::expect(TokenType type, const char *errMsg) {
-    if (match(type))
-        return true;
+bool Parser::expect(TokenType type, const char* errMsg) {
+    if (match(type)) return true;
     throw std::runtime_error(errMsg);
 }
 
 // CompUnit -> FuncDef+
 std::vector<std::unique_ptr<FuncDef>> Parser::parseCompUnit() {
     std::vector<std::unique_ptr<FuncDef>> funcs;
-    while (current < tokens.size() && peek().type != TokenType::END_OF_FILE) {
+    while (current < tokens.size() && tokens[current].type != TokenType::END_OF_FILE) {
         funcs.push_back(parseFuncDef());
     }
     return funcs;
@@ -66,6 +65,7 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
                 throw std::runtime_error("Expected parameter name");
             func->params.emplace_back("int", tokens[current - 1].lexeme);
         } while (match(TokenType::COMMA));
+
         expect(TokenType::RPAREN, "Expected ')' after parameter list");
     }
 
@@ -89,20 +89,30 @@ std::unique_ptr<Block> Parser::parseBlock() {
 // Stmt -> various forms
 std::unique_ptr<Stmt> Parser::parseStmt() {
     if (match(TokenType::LBRACE)) {
-        // 匹配到 {，往回退一个token，parseBlock会重新处理
+        // 回退一个token，让parseBlock处理左大括号
         current--;
         return parseBlock();
     }
 
-    switch (peek().type) {
-        case TokenType::INT: return parseVarDecl();
-        case TokenType::IF: return parseIfStmt();
-        case TokenType::WHILE: return parseWhileStmt();
-        case TokenType::BREAK: return parseBreakStmt();
-        case TokenType::CONTINUE: return parseContinueStmt();
-        case TokenType::RETURN: return parseReturnStmt();
-        default: return parseAssignOrExprStmt();
-    }
+    if (peek().type == TokenType::INT)
+        return parseVarDecl();
+
+    if (peek().type == TokenType::IF)
+        return parseIfStmt();
+
+    if (peek().type == TokenType::WHILE)
+        return parseWhileStmt();
+
+    if (peek().type == TokenType::BREAK)
+        return parseBreakStmt();
+
+    if (peek().type == TokenType::CONTINUE)
+        return parseContinueStmt();
+
+    if (peek().type == TokenType::RETURN)
+        return parseReturnStmt();
+
+    return parseAssignOrExprStmt();
 }
 
 std::unique_ptr<Stmt> Parser::parseVarDecl() {
@@ -129,6 +139,7 @@ std::unique_ptr<Stmt> Parser::parseVarDecl() {
 
 std::unique_ptr<Stmt> Parser::parseIfStmt() {
     expect(TokenType::IF, "Expected 'if'");
+
     expect(TokenType::LPAREN, "Expected '(' after if");
 
     auto cond = parseExpr();
@@ -151,6 +162,7 @@ std::unique_ptr<Stmt> Parser::parseIfStmt() {
 
 std::unique_ptr<Stmt> Parser::parseWhileStmt() {
     expect(TokenType::WHILE, "Expected 'while'");
+
     expect(TokenType::LPAREN, "Expected '(' after while");
 
     auto cond = parseExpr();
@@ -180,15 +192,15 @@ std::unique_ptr<Stmt> Parser::parseContinueStmt() {
 std::unique_ptr<Stmt> Parser::parseReturnStmt() {
     expect(TokenType::RETURN, "Expected 'return'");
     if (peek().type != TokenType::SEMICOLON) {
-        // 允许 return expr;
-        auto retExpr = parseExpr();
+        auto expr = parseExpr();
         expect(TokenType::SEMICOLON, "Expected ';' after return expression");
         auto retStmt = std::make_unique<ReturnStmt>();
-        retStmt->value = std::move(retExpr);
+        retStmt->expr = std::move(expr);
         return retStmt;
+    } else {
+        expect(TokenType::SEMICOLON, "Expected ';' after return");
+        return std::make_unique<ReturnStmt>();
     }
-    expect(TokenType::SEMICOLON, "Expected ';' after return");
-    return std::make_unique<ReturnStmt>();
 }
 
 std::unique_ptr<Stmt> Parser::parseAssignOrExprStmt() {
@@ -203,7 +215,7 @@ std::unique_ptr<Stmt> Parser::parseAssignOrExprStmt() {
             assignStmt->value = std::move(value);
             return assignStmt;
         } else {
-            // 不是赋值，回退一个token重新解析表达式
+            // 不是赋值，回退以解析表达式
             current--;
             auto expr = parseExpr();
             expect(TokenType::SEMICOLON, "Expected ';' after expression");
@@ -216,7 +228,7 @@ std::unique_ptr<Stmt> Parser::parseAssignOrExprStmt() {
     }
 }
 
-// 下面是表达式递归下降解析，支持优先级
+// 递归下降表达式解析，支持优先级
 
 std::unique_ptr<Expr> Parser::parseExpr() {
     return parseLOrExpr();
@@ -321,7 +333,6 @@ std::unique_ptr<Expr> Parser::parsePrimaryExpr() {
         std::string id = tokens[current - 1].lexeme;
 
         if (match(TokenType::LPAREN)) {
-            // 函数调用
             auto callExpr = std::make_unique<CallExpr>(id);
 
             if (!match(TokenType::RPAREN)) {

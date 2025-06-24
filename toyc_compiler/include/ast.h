@@ -1,93 +1,64 @@
+// === ast.h ===
 #pragma once
-#include <memory>
 #include <string>
 #include <vector>
+#include <memory>
 
-// AST 节点基类
-class ASTNode {
-public:
+struct ASTNode {
     virtual ~ASTNode() = default;
 };
 
-// 表达式基类
-class Expr : public ASTNode {
-public:
-    virtual ~Expr() = default;
+struct Expr : ASTNode {};
+struct Stmt : ASTNode {};
+
+struct Program : ASTNode {
+    std::vector<std::unique_ptr<class FuncDef>> functions;
 };
 
-// 字面量（整数）
-class NumberExpr : public Expr {
-public:
-    int value;
-    explicit NumberExpr(int val) : value(val) {}
+struct FuncDef : ASTNode {
+    std::string retType, name;
+    struct Param {
+        std::string type, name;
+    };
+    std::vector<Param> params;
+    std::unique_ptr<class Block> body;
+
+    FuncDef(const std::string &rt, const std::string &n) : retType(rt), name(n) {}
 };
 
-// 变量引用
-class VarExpr : public Expr {
-public:
+struct Block : Stmt {
+    std::vector<std::unique_ptr<Stmt>> stmts;
+};
+
+struct ReturnStmt : Stmt {
+    std::unique_ptr<Expr> expr;
+};
+
+struct VarExpr : Expr {
     std::string name;
-    explicit VarExpr(const std::string &n) : name(n) {}
+    VarExpr(std::string n) : name(std::move(n)) {}
 };
 
-// 二元运算
-class BinaryExpr : public Expr {
-public:
-    char op;
-    std::unique_ptr<Expr> lhs;
-    std::unique_ptr<Expr> rhs;
-    
-    BinaryExpr(char o, std::unique_ptr<Expr> l, std::unique_ptr<Expr> r)
-        : op(o), lhs(std::move(l)), rhs(std::move(r)) {}
+struct NumberExpr : Expr {
+    int value;
+    NumberExpr(int v) : value(v) {}
 };
 
-// 函数调用
-class CallExpr : public Expr {
-public:
+struct UnaryExpr : Expr {
+    std::string op;
+    std::unique_ptr<Expr> operand;
+    UnaryExpr(std::string o, std::unique_ptr<Expr> e) : op(std::move(o)), operand(std::move(e)) {}
+};
+
+struct BinaryExpr : Expr {
+    std::string op;
+    std::unique_ptr<Expr> lhs, rhs;
+    BinaryExpr(std::string o, std::unique_ptr<Expr> l, std::unique_ptr<Expr> r)
+        : op(std::move(o)), lhs(std::move(l)), rhs(std::move(r)) {}
+};
+
+struct CallExpr : Expr {
     std::string callee;
     std::vector<std::unique_ptr<Expr>> args;
-
-    CallExpr(const std::string &c, std::vector<std::unique_ptr<Expr>> a)
-        : callee(c), args(std::move(a)) {}
-};
-
-// 语句基类
-class Stmt : public ASTNode {
-public:
-    virtual ~Stmt() = default;
-};
-
-// 表达式语句
-class ExprStmt : public Stmt {
-public:
-    std::unique_ptr<Expr> expr;
-    explicit ExprStmt(std::unique_ptr<Expr> e) : expr(std::move(e)) {}
-};
-
-// 变量声明
-class VarDecl : public Stmt {
-public:
-    std::string name;
-    std::unique_ptr<Expr> init;
-
-    VarDecl(const std::string &n, std::unique_ptr<Expr> i)
-        : name(n), init(std::move(i)) {}
-};
-
-// 函数定义
-class Function : public ASTNode {
-public:
-    std::string name;
-    std::vector<std::string> params;
-    std::vector<std::unique_ptr<Stmt>> body;
-
-    Function(const std::string &n, 
-             std::vector<std::string> p,
-             std::vector<std::unique_ptr<Stmt>> b)
-        : name(n), params(std::move(p)), body(std::move(b)) {}
-};
-
-// 程序（编译单元）
-class Program : public ASTNode {
-public:
-    std::vector<std::unique_ptr<Function>> functions;
+    CallExpr(std::string c) : callee(std::move(c)) {}
 };
