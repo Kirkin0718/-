@@ -1,126 +1,128 @@
 #include "semantic.h"
-#include "ast.h"
-#include <stdexcept>
-
-void SemanticAnalyzer::analyze(ASTNode *node) {
-    if (auto func = dynamic_cast<FuncDef*>(node)) {
-        analyzeFunc(func);
-    } else {
-        reportError("Unsupported AST node");
-    }
-}
+#include <iostream>
 
 void SemanticAnalyzer::enterScope() {
-    scopes.emplace();
+    scopes.emplace_back();
 }
 
 void SemanticAnalyzer::exitScope() {
-    if (scopes.empty()) reportError("Scope stack underflow");
-    scopes.pop();
+    if (scopes.empty()) {
+        std::cerr << "Internal error: scope stack underflow\n";
+        return;
+    }
+    scopes.pop_back();
 }
 
-void SemanticAnalyzer::declare(const std::string &name, const Symbol &symbol) {
+bool SemanticAnalyzer::declare(const std::string& name, const Symbol& symbol) {
     if (scopes.empty()) enterScope();
-    auto &scope = scopes.top();
-    if (scope.count(name)) {
-        reportError("Redefinition of " + name);
+    auto& current = scopes.back();
+    if (current.find(name) != current.end()) {
+        reportError("Variable '" + name + "' redeclared in current scope");
+        return false;
     }
-    scope[name] = symbol;
+    current[name] = symbol;
+    return true;
 }
 
-Symbol SemanticAnalyzer::lookup(const std::string &name) {
+Symbol SemanticAnalyzer::lookup(const std::string& name) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-        if (it->count(name)) return it->at(name);
+        auto found = it->find(name);
+        if (found != it->end()) {
+            return found->second;
+        }
     }
-    reportError("Undeclared identifier: " + name);
-    return Symbol{Type::Unknown};
+    reportError("Undeclared identifier '" + name + "'");
+    return Symbol{Type::Unknown, false, {}};
 }
 
-void SemanticAnalyzer::analyzeFunc(FuncDef *func) {
-    Symbol sym;
-    sym.type = func->retType == "int" ? Type::Int : Type::Void;
-    sym.isFunction = true;
-    for (auto &param : func->params) {
-        sym.paramTypes.push_back(Type::Int);
-    }
-    declare(func->name, sym);
-
+void SemanticAnalyzer::analyze(const std::vector<std::unique_ptr<FuncDef>>& funcs) {
     enterScope();
-    for (auto &param : func->params) {
-        declare(param.name, Symbol{Type::Int});
+    for (const auto& func : funcs) {
+        analyzeFunc(func.get());
+    }
+    exitScope();
+}
+
+void SemanticAnalyzer::analyzeFunc(FuncDef* func) {
+    enterScope();
+    for (auto& param : func->params) {
+        Symbol sym{Type::Int, false, {}};
+        if (!declare(param.name, sym)) {
+            reportError("Duplicate parameter name: " + param.name);
+        }
     }
     analyzeBlock(func->body.get());
     exitScope();
 }
 
-void SemanticAnalyzer::analyzeBlock(Block *block) {
+void SemanticAnalyzer::analyzeBlock(Block* block) {
     enterScope();
-    for (auto &stmt : block->stmts) {
+    for (auto& stmt : block->stmts) {
         analyzeStmt(stmt.get());
     }
     exitScope();
 }
 
-void SemanticAnalyzer::analyzeStmt(Stmt *stmt) {
-    if (auto exprStmt = dynamic_cast<ExprStmt*>(stmt)) {
-        analyzeExpr(exprStmt->expr.get());
-    } else if (auto assign = dynamic_cast<AssignStmt*>(stmt)) {
-        auto rhsType = analyzeExpr(assign->value.get());
-        if (assign->isDecl) {
-            declare(assign->varName, Symbol{rhsType});
-        } else {
-            auto sym = lookup(assign->varName);
-            if (sym.type != rhsType)
-                reportError("Type mismatch in assignment");
+void SemanticAnalyzer::analyzeStmt(Stmt* stmt) {
+    if (auto decl = dynamic_cast<VarDeclStmt*>(stmt)) {
+        Symbol sym{Type::Int, false, {}};
+        if (!declare(decl->name, sym)) {
+            reportError("Variable '" + decl->name + "' redeclared");
         }
-    } else if (auto ret = dynamic_cast<ReturnStmt*>(stmt)) {
-        if (ret->value)
-            analyzeExpr(ret->value.get());
-    } else if (auto block = dynamic_cast<Block*>(stmt)) {
-        analyzeBlock(block);
-    } else if (auto ifStmt = dynamic_cast<IfStmt*>(stmt)) {
-        analyzeExpr(ifStmt->cond.get());
-        analyzeStmt(ifStmt->thenStmt.get());
-        if (ifStmt->elseStmt) analyzeStmt(ifStmt->elseStmt.get());
-    } else if (auto whileStmt = dynamic_cast<WhileStmt*>(stmt)) {
-        analyzeExpr(whileStmt->cond.get());
+        if (decl->initializer) analyzeExpr(decl->initializer.get());
+    }
+    else if (auto assign = dynamic_cast<AssignStmt*>(stmt)) {
+        Symbol sym = lookup(assign->name);
+        if (sym.type == Type::Unknown) {
+            reportError("Variable '" + assign->name + "' used before declaration");
+        }
+        analyzeExpr(assign->value.get());
+    }
+    else if (auto ifStmt = dynamic_cast<IfStmt*>(stmt)) {
+        analyzeExpr(ifStmt->condition.get());
+        analyzeStmt(ifStmt->thenBlock.get());
+        if (ifStmt->elseBlock) analyzeStmt(ifStmt->elseBlock.get());
+    }
+    else if (auto whileStmt = dynamic_cast<WhileStmt*>(stmt)) {
+        analyzeExpr(whileStmt->condition.get());
         analyzeStmt(whileStmt->body.get());
-    } else {
-        // 其他语句如break, continue可忽略基础处理
+    }
+    else if (dynamic_cast<BreakStmt*>(stmt) || dynamic_cast<ContinueStmt*>(stmt)) {
+        // 可做循环上下文检测
+    }
+    else {
+        reportError("Unknown statement type");
     }
 }
 
-Type SemanticAnalyzer::analyzeExpr(Expr *expr) {
-    if (auto num = dynamic_cast<NumberExpr*>(expr)) {
-        return Type::Int;
-    } else if (auto var = dynamic_cast<VarExpr*>(expr)) {
-        return lookup(var->name).type;
-    } else if (auto bin = dynamic_cast<BinaryExpr*>(expr)) {
-        auto lhsType = analyzeExpr(bin->lhs.get());
-        auto rhsType = analyzeExpr(bin->rhs.get());
-        if (lhsType != Type::Int || rhsType != Type::Int) {
-            reportError("Binary operator requires int operands");
+void SemanticAnalyzer::analyzeExpr(Expr* expr) {
+    if (auto var = dynamic_cast<VarExpr*>(expr)) {
+        Symbol sym = lookup(var->name);
+        if (sym.type == Type::Unknown) {
+            reportError("Variable '" + var->name + "' used before declaration");
         }
-        return Type::Int;
-    } else if (auto call = dynamic_cast<CallExpr*>(expr)) {
-        auto sym = lookup(call->callee);
-        if (!sym.isFunction) reportError(call->callee + " is not a function");
-        if (call->args.size() != sym.paramTypes.size()) reportError("Argument count mismatch");
-        for (size_t i = 0; i < call->args.size(); i++) {
-            auto argType = analyzeExpr(call->args[i].get());
-            if (argType != sym.paramTypes[i]) reportError("Argument type mismatch");
+    }
+    else if (auto num = dynamic_cast<NumberExpr*>(expr)) {
+        // 数字不需要检查
+    }
+    else if (auto bin = dynamic_cast<BinaryExpr*>(expr)) {
+        analyzeExpr(bin->lhs.get());
+        analyzeExpr(bin->rhs.get());
+    }
+    else if (auto unary = dynamic_cast<UnaryExpr*>(expr)) {
+        analyzeExpr(unary->operand.get());
+    }
+    else if (auto call = dynamic_cast<CallExpr*>(expr)) {
+        for (auto& arg : call->args) {
+            analyzeExpr(arg.get());
         }
-        return sym.type;
-    } else if (auto unary = dynamic_cast<UnaryExpr*>(expr)) {
-        auto type = analyzeExpr(unary->operand.get());
-        if (type != Type::Int) reportError("Unary operator requires int operand");
-        return Type::Int;
-    } else {
-        reportError("Unknown expression");
-        return Type::Unknown;
+        // TODO: 函数调用检查
+    }
+    else {
+        reportError("Unknown expression type");
     }
 }
 
-void SemanticAnalyzer::reportError(const std::string &msg) {
-    throw std::runtime_error("Semantic error: " + msg);
+void SemanticAnalyzer::reportError(const std::string& msg) {
+    std::cerr << "Semantic error: " << msg << std::endl;
 }

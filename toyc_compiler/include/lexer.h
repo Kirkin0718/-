@@ -6,28 +6,29 @@
 #include "token.h"
 
 class Lexer {
+public:
+    explicit Lexer(const std::string& src);
+
+    std::vector<Token> tokenize();
+
 private:
-    const std::string &source;  // 代码源文本
-    size_t index;
+    std::string source;
+    size_t start;
+    size_t current;
     int line;
     int column;
 
+    bool isAtEnd() const;
+    char advance();
     char peek() const;
     char peekNext() const;
-    char advance();
+    bool match(char expected);
 
-    void skipWhitespaceAndComments();
-
-    Token makeToken(TokenType type, const std::string &lexeme);
-
+    void skipWhitespace();
     Token identifier();
     Token number();
     Token operatorOrDelimiter();
-
-public:
-    explicit Lexer(const std::string &src);
-
-    std::vector<Token> tokenize();
+    Token makeToken(TokenType type, const std::string& lexeme);
 };
 
-#endif // LEXER_H
+#endif

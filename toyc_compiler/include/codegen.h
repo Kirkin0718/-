@@ -7,6 +7,7 @@
 class CodeGen {
 public:
     CodeGen(std::ostream &out);
+    void genBlock(Block *block);
     void generate(const std::vector<std::unique_ptr<FuncDef>> &funcs);
 
 private:

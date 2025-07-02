@@ -64,10 +64,12 @@ CMAKE_BINARY_DIR = /mnt/hgfs/vm_file/toyc_compiler/build
 
 # The main recursive "all" target.
 all: CMakeFiles/toyc.dir/all
+all: CMakeFiles/test_semantic.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/toyc.dir/codegen
+codegen: CMakeFiles/test_semantic.dir/codegen
 .PHONY : codegen
 
 # The main recursive "preinstall" target.
@@ -76,6 +78,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/toyc.dir/clean
+clean: CMakeFiles/test_semantic.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -85,7 +88,7 @@ clean: CMakeFiles/toyc.dir/clean
 CMakeFiles/toyc.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Built target toyc"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=6,7,8,9,10,11 "Built target toyc"
 .PHONY : CMakeFiles/toyc.dir/all
 
 # Build rule for subdir invocation for target.
@@ -102,13 +105,45 @@ toyc: CMakeFiles/toyc.dir/rule
 # codegen rule for target.
 CMakeFiles/toyc.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=1,2,3,4,5,6 "Finished codegen for target toyc"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=6,7,8,9,10,11 "Finished codegen for target toyc"
 .PHONY : CMakeFiles/toyc.dir/codegen
 
 # clean rule for target.
 CMakeFiles/toyc.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/clean
 .PHONY : CMakeFiles/toyc.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_semantic.dir
+
+# All Build rule for target.
+CMakeFiles/test_semantic.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=1,2,3,4,5 "Built target test_semantic"
+.PHONY : CMakeFiles/test_semantic.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_semantic.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles 5
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_semantic.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_semantic.dir/rule
+
+# Convenience name for target.
+test_semantic: CMakeFiles/test_semantic.dir/rule
+.PHONY : test_semantic
+
+# codegen rule for target.
+CMakeFiles/test_semantic.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles --progress-num=1,2,3,4,5 "Finished codegen for target test_semantic"
+.PHONY : CMakeFiles/test_semantic.dir/codegen
+
+# clean rule for target.
+CMakeFiles/test_semantic.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/clean
+.PHONY : CMakeFiles/test_semantic.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

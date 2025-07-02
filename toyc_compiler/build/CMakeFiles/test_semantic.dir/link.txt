@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/test_semantic.dir/test/test_semantic.cpp.o CMakeFiles/test_semantic.dir/src/semantic.cpp.o CMakeFiles/test_semantic.dir/src/parser.cpp.o CMakeFiles/test_semantic.dir/src/lexer.cpp.o -o test_semantic

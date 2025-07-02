@@ -1,4 +1,4 @@
-CMakeFiles/toyc.dir/src/lexer.cpp.o: \
+CMakeFiles/test_semantic.dir/src/lexer.cpp.o: \
  /mnt/hgfs/vm_file/toyc_compiler/src/lexer.cpp /usr/include/stdc-predef.h \
  /mnt/hgfs/vm_file/toyc_compiler/include/lexer.h \
  /usr/include/c++/11/string \

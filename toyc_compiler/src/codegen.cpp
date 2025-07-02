@@ -44,13 +44,13 @@ std::string CodeGen::genExpr(Expr *expr) {
         } else if (bin->op == "%") {
             emit("rem a0, t0, a0");
         } else {
-            // 省略其他操作符
+            assert(false && "Unsupported binary operator");
         }
         return "a0";
     } else if (auto call = dynamic_cast<CallExpr *>(expr)) {
         for (size_t i = 0; i < call->args.size(); i++) {
             genExpr(call->args[i].get());
-            emit("mv a" + std::to_string(i), "a0");
+            emit("mv a" + std::to_string(i) + ", a0");
         }
         emit("call " + call->callee);
         return "a0";
@@ -60,9 +60,12 @@ std::string CodeGen::genExpr(Expr *expr) {
             emit("neg a0, a0");
         } else if (unary->op == "!") {
             emit("seqz a0, a0");
+        } else {
+            assert(false && "Unsupported unary operator");
         }
         return "a0";
     }
+    assert(false && "Unknown Expr type");
     return "a0";
 }
 
@@ -75,7 +78,7 @@ void CodeGen::genFunc(FuncDef *func) {
 
     emit("addi sp, sp, -128"); // 分配栈空间
 
-    // 函数参数入栈映射
+    // 参数保存
     for (size_t i = 0; i < func->params.size(); i++) {
         offset -= 4;
         localVarOffset[func->params[i].name] = offset;
@@ -97,40 +100,46 @@ void CodeGen::genBlock(Block *block) {
 void CodeGen::genStmt(Stmt *stmt) {
     if (auto decl = dynamic_cast<VarDeclStmt *>(stmt)) {
         int offset = localVarOffset.size() * -4 - 4;
-        localVarOffset[decl->varName] = offset;
-        genExpr(decl->initExpr.get());
-        emit("sw a0, " + std::to_string(offset) + "(sp)");
+        localVarOffset[decl->name] = offset;
+        if (decl->initializer) {
+            genExpr(decl->initializer.get());
+            emit("sw a0, " + std::to_string(offset) + "(sp)");
+        }
     } else if (auto assign = dynamic_cast<AssignStmt *>(stmt)) {
-        int offset = localVarOffset[assign->varName];
+        int offset = localVarOffset[assign->name];
         genExpr(assign->value.get());
         emit("sw a0, " + std::to_string(offset) + "(sp)");
     } else if (auto exprStmt = dynamic_cast<ExprStmt *>(stmt)) {
         genExpr(exprStmt->expr.get());
     } else if (auto ret = dynamic_cast<ReturnStmt *>(stmt)) {
-        if (ret->value) genExpr(ret->value.get());
+        if (ret->expr) genExpr(ret->expr.get());
         emit("addi sp, sp, 128");
         emit("ret");
     } else if (auto ifStmt = dynamic_cast<IfStmt *>(stmt)) {
         std::string elseLabel = newLabel("else");
         std::string endLabel = newLabel("endif");
 
-        genExpr(ifStmt->cond.get());
+        genExpr(ifStmt->condition.get());
         emit("beqz a0, " + elseLabel);
-        genStmt(ifStmt->thenStmt.get());
+        genBlock(ifStmt->thenBlock.get());
         emit("j " + endLabel);
         emit(elseLabel + ":");
-        if (ifStmt->elseStmt) genStmt(ifStmt->elseStmt.get());
+        if (ifStmt->elseBlock) genBlock(ifStmt->elseBlock.get());
         emit(endLabel + ":");
     } else if (auto whileStmt = dynamic_cast<WhileStmt *>(stmt)) {
         std::string loopLabel = newLabel("loop");
         std::string endLabel = newLabel("endloop");
         emit(loopLabel + ":");
-        genExpr(whileStmt->cond.get());
+        genExpr(whileStmt->condition.get());
         emit("beqz a0, " + endLabel);
-        genStmt(whileStmt->body.get());
+        genBlock(whileStmt->body.get());
         emit("j " + loopLabel);
         emit(endLabel + ":");
-    } else if (dynamic_cast<BreakStmt *>(stmt) || dynamic_cast<ContinueStmt *>(stmt)) {
-        // 简化不处理
+    } else if (dynamic_cast<BreakStmt *>(stmt)) {
+        // TODO: 需要循环上下文
+    } else if (dynamic_cast<ContinueStmt *>(stmt)) {
+        // TODO: 需要循环上下文
+    } else {
+        assert(false && "Unknown Stmt type");
     }
 }

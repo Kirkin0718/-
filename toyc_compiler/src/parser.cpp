@@ -1,8 +1,10 @@
-// parser.cpp
 #include "parser.h"
 #include "ast.h"
 #include "token.h"
 #include <stdexcept>
+
+Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), current(0) {}
+
 
 // 工具函数实现
 const Token &Parser::peek() const {
@@ -59,7 +61,6 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
 
     if (!match(TokenType::RPAREN)) {
         do {
-            // Param -> "int" ID
             expect(TokenType::INT, "Expected parameter type 'int'");
             if (!match(TokenType::IDENTIFIER))
                 throw std::runtime_error("Expected parameter name");
@@ -89,30 +90,19 @@ std::unique_ptr<Block> Parser::parseBlock() {
 // Stmt -> various forms
 std::unique_ptr<Stmt> Parser::parseStmt() {
     if (match(TokenType::LBRACE)) {
-        // 回退一个token，让parseBlock处理左大括号
-        current--;
+        current--;  // 回退一个token，让parseBlock处理左大括号
         return parseBlock();
     }
 
-    if (peek().type == TokenType::INT)
-        return parseVarDecl();
-
-    if (peek().type == TokenType::IF)
-        return parseIfStmt();
-
-    if (peek().type == TokenType::WHILE)
-        return parseWhileStmt();
-
-    if (peek().type == TokenType::BREAK)
-        return parseBreakStmt();
-
-    if (peek().type == TokenType::CONTINUE)
-        return parseContinueStmt();
-
-    if (peek().type == TokenType::RETURN)
-        return parseReturnStmt();
-
-    return parseAssignOrExprStmt();
+    switch (peek().type) {
+        case TokenType::INT: return parseVarDecl();
+        case TokenType::IF: return parseIfStmt();
+        case TokenType::WHILE: return parseWhileStmt();
+        case TokenType::BREAK: return parseBreakStmt();
+        case TokenType::CONTINUE: return parseContinueStmt();
+        case TokenType::RETURN: return parseReturnStmt();
+        default: return parseAssignOrExprStmt();
+    }
 }
 
 std::unique_ptr<Stmt> Parser::parseVarDecl() {
@@ -121,20 +111,15 @@ std::unique_ptr<Stmt> Parser::parseVarDecl() {
     if (!match(TokenType::IDENTIFIER))
         throw std::runtime_error("Expected variable name");
 
-    std::string varName = tokens[current - 1].lexeme;
+    std::string name = tokens[current - 1].lexeme;
 
     expect(TokenType::ASSIGN, "Expected '=' in variable declaration");
 
-    auto initExpr = parseExpr();
+    auto initializer = parseExpr();
 
     expect(TokenType::SEMICOLON, "Expected ';' after variable declaration");
 
-    auto decl = std::make_unique<VarDeclStmt>();
-    decl->varType = "int";
-    decl->varName = varName;
-    decl->initExpr = std::move(initExpr);
-
-    return decl;
+    return std::make_unique<VarDeclStmt>("int", name, std::move(initializer));
 }
 
 std::unique_ptr<Stmt> Parser::parseIfStmt() {
@@ -146,18 +131,28 @@ std::unique_ptr<Stmt> Parser::parseIfStmt() {
 
     expect(TokenType::RPAREN, "Expected ')' after if condition");
 
-    auto thenStmt = parseStmt();
+    auto thenBlock = parseStmt();
 
-    std::unique_ptr<Stmt> elseStmt = nullptr;
-    if (match(TokenType::ELSE)) {
-        elseStmt = parseStmt();
+    std::unique_ptr<Block> thenBlk = nullptr;
+    if (auto blk = dynamic_cast<Block*>(thenBlock.get())) {
+        thenBlk = std::unique_ptr<Block>(static_cast<Block*>(thenBlock.release()));
+    } else {
+        thenBlk = std::make_unique<Block>();
+        thenBlk->stmts.push_back(std::move(thenBlock));
     }
 
-    auto ifStmt = std::make_unique<IfStmt>();
-    ifStmt->cond = std::move(cond);
-    ifStmt->thenStmt = std::move(thenStmt);
-    ifStmt->elseStmt = std::move(elseStmt);
-    return ifStmt;
+    std::unique_ptr<Block> elseBlk = nullptr;
+    if (match(TokenType::ELSE)) {
+        auto elseStmt = parseStmt();
+        if (auto blk = dynamic_cast<Block*>(elseStmt.get())) {
+            elseBlk = std::unique_ptr<Block>(static_cast<Block*>(elseStmt.release()));
+        } else {
+            elseBlk = std::make_unique<Block>();
+            elseBlk->stmts.push_back(std::move(elseStmt));
+        }
+    }
+
+    return std::make_unique<IfStmt>(std::move(cond), std::move(thenBlk), std::move(elseBlk));
 }
 
 std::unique_ptr<Stmt> Parser::parseWhileStmt() {
@@ -169,12 +164,17 @@ std::unique_ptr<Stmt> Parser::parseWhileStmt() {
 
     expect(TokenType::RPAREN, "Expected ')' after while condition");
 
-    auto body = parseStmt();
+    auto bodyStmt = parseStmt();
 
-    auto whileStmt = std::make_unique<WhileStmt>();
-    whileStmt->cond = std::move(cond);
-    whileStmt->body = std::move(body);
-    return whileStmt;
+    std::unique_ptr<Block> bodyBlk = nullptr;
+    if (auto blk = dynamic_cast<Block*>(bodyStmt.get())) {
+        bodyBlk = std::unique_ptr<Block>(static_cast<Block*>(bodyStmt.release()));
+    } else {
+        bodyBlk = std::make_unique<Block>();
+        bodyBlk->stmts.push_back(std::move(bodyStmt));
+    }
+
+    return std::make_unique<WhileStmt>(std::move(cond), std::move(bodyBlk));
 }
 
 std::unique_ptr<Stmt> Parser::parseBreakStmt() {
@@ -210,10 +210,7 @@ std::unique_ptr<Stmt> Parser::parseAssignOrExprStmt() {
         if (match(TokenType::ASSIGN)) {
             auto value = parseExpr();
             expect(TokenType::SEMICOLON, "Expected ';' after assignment");
-            auto assignStmt = std::make_unique<AssignStmt>();
-            assignStmt->varName = name;
-            assignStmt->value = std::move(value);
-            return assignStmt;
+            return std::make_unique<AssignStmt>(name, std::move(value));
         } else {
             // 不是赋值，回退以解析表达式
             current--;

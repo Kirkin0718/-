@@ -1,5 +1,6 @@
 #ifndef TOKEN_H
 #define TOKEN_H
+
 #include <string>
 
 enum class TokenType {
@@ -10,18 +11,22 @@ enum class TokenType {
     ASSIGN, EQUAL, NOT_EQUAL, LOGICAL_AND, LOGICAL_OR, NOT,
     LPAREN, RPAREN, LBRACE, RBRACE, COMMA, SEMICOLON,
     END_OF_FILE, UNKNOWN
+    // 其他需要的 TokenType...
 };
 
 struct Token {
     TokenType type;
     std::string lexeme;
-    int line;
-    int column;
+    int line = 0;
+    int column = 0;
 
     Token() = default;
 
-    Token(TokenType t, const std::string &lex, int ln, int col)
-        : type(t), lexeme(lex), line(ln), column(col) {}
+    Token(TokenType t, const char* lex)
+        : type(t), lexeme(lex) {}
+
+    Token(TokenType t, const std::string& lex, int l, int c)
+        : type(t), lexeme(lex), line(l), column(c) {}
 };
 
-#endif
+#endif // TOKEN_H

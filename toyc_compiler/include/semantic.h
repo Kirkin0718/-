@@ -1,10 +1,11 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
-#include "ast.h"  // 一定要包含ast.h，保证UnaryExpr等定义可见
+#include "ast.h"
 #include <stack>
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 enum class Type { Int, Void, Unknown };
 
@@ -16,29 +17,23 @@ struct Symbol {
 
 class SemanticAnalyzer {
 public:
-    void analyze(ASTNode *node);
+    void analyze(const std::vector<std::unique_ptr<FuncDef>>& funcs);
 
 private:
-    std::stack<std::unordered_map<std::string, Symbol>> scopes;
+    std::vector<std::unordered_map<std::string, Symbol>> scopes;
 
     void enterScope();
     void exitScope();
 
-    void declare(const std::string &name, const Symbol &symbol);
-    Symbol lookup(const std::string &name);
+    bool declare(const std::string& name, const Symbol& symbol);
+    Symbol lookup(const std::string& name);
 
-    void analyzeFunc(FuncDef *func);
-    void analyzeBlock(Block *block);
-    void analyzeStmt(Stmt *stmt);
+    void analyzeFunc(FuncDef* func);
+    void analyzeBlock(Block* block);
+    void analyzeStmt(Stmt* stmt);
+    void analyzeExpr(Expr* expr);
 
-    Type analyzeExpr(Expr *expr);
-    Type analyzeBinary(BinaryExpr *expr);
-    Type analyzeCall(CallExpr *expr);
-    Type analyzeVar(VarExpr *expr);
-    Type analyzeNumber(NumberExpr *expr);
-    Type analyzeUnary(UnaryExpr *expr);  // 这里UnaryExpr已定义
-
-    void reportError(const std::string &msg);
+    void reportError(const std::string& msg);
 };
 
 #endif // SEMANTIC_H

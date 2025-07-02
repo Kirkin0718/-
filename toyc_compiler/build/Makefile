@@ -129,6 +129,19 @@ toyc/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/build
 .PHONY : toyc/fast
 
+#=============================================================================
+# Target rules for targets named test_semantic
+
+# Build rule for target.
+test_semantic: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_semantic
+.PHONY : test_semantic
+
+# fast build rule for target.
+test_semantic/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/build
+.PHONY : test_semantic/fast
+
 src/codegen.o: src/codegen.cpp.o
 .PHONY : src/codegen.o
 
@@ -159,6 +172,7 @@ src/lexer.o: src/lexer.cpp.o
 # target to build an object file
 src/lexer.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/lexer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/lexer.cpp.o
 .PHONY : src/lexer.cpp.o
 
 src/lexer.i: src/lexer.cpp.i
@@ -167,6 +181,7 @@ src/lexer.i: src/lexer.cpp.i
 # target to preprocess a source file
 src/lexer.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/lexer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/lexer.cpp.i
 .PHONY : src/lexer.cpp.i
 
 src/lexer.s: src/lexer.cpp.s
@@ -175,6 +190,7 @@ src/lexer.s: src/lexer.cpp.s
 # target to generate assembly for a file
 src/lexer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/lexer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/lexer.cpp.s
 .PHONY : src/lexer.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -207,6 +223,7 @@ src/parser.o: src/parser.cpp.o
 # target to build an object file
 src/parser.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/parser.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/parser.cpp.o
 .PHONY : src/parser.cpp.o
 
 src/parser.i: src/parser.cpp.i
@@ -215,6 +232,7 @@ src/parser.i: src/parser.cpp.i
 # target to preprocess a source file
 src/parser.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/parser.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/parser.cpp.i
 .PHONY : src/parser.cpp.i
 
 src/parser.s: src/parser.cpp.s
@@ -223,6 +241,7 @@ src/parser.s: src/parser.cpp.s
 # target to generate assembly for a file
 src/parser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/parser.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/parser.cpp.s
 .PHONY : src/parser.cpp.s
 
 src/semantic.o: src/semantic.cpp.o
@@ -231,6 +250,7 @@ src/semantic.o: src/semantic.cpp.o
 # target to build an object file
 src/semantic.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/semantic.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/semantic.cpp.o
 .PHONY : src/semantic.cpp.o
 
 src/semantic.i: src/semantic.cpp.i
@@ -239,6 +259,7 @@ src/semantic.i: src/semantic.cpp.i
 # target to preprocess a source file
 src/semantic.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/semantic.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/semantic.cpp.i
 .PHONY : src/semantic.cpp.i
 
 src/semantic.s: src/semantic.cpp.s
@@ -247,7 +268,32 @@ src/semantic.s: src/semantic.cpp.s
 # target to generate assembly for a file
 src/semantic.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/toyc.dir/build.make CMakeFiles/toyc.dir/src/semantic.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/src/semantic.cpp.s
 .PHONY : src/semantic.cpp.s
+
+test/test_semantic.o: test/test_semantic.cpp.o
+.PHONY : test/test_semantic.o
+
+# target to build an object file
+test/test_semantic.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/test/test_semantic.cpp.o
+.PHONY : test/test_semantic.cpp.o
+
+test/test_semantic.i: test/test_semantic.cpp.i
+.PHONY : test/test_semantic.i
+
+# target to preprocess a source file
+test/test_semantic.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/test/test_semantic.cpp.i
+.PHONY : test/test_semantic.cpp.i
+
+test/test_semantic.s: test/test_semantic.cpp.s
+.PHONY : test/test_semantic.s
+
+# target to generate assembly for a file
+test/test_semantic.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_semantic.dir/build.make CMakeFiles/test_semantic.dir/test/test_semantic.cpp.s
+.PHONY : test/test_semantic.cpp.s
 
 # Help Target
 help:
@@ -257,6 +303,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test_semantic"
 	@echo "... toyc"
 	@echo "... src/codegen.o"
 	@echo "... src/codegen.i"
@@ -273,6 +320,9 @@ help:
 	@echo "... src/semantic.o"
 	@echo "... src/semantic.i"
 	@echo "... src/semantic.s"
+	@echo "... test/test_semantic.o"
+	@echo "... test/test_semantic.i"
+	@echo "... test/test_semantic.s"
 .PHONY : help
 
 
