@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/mnt/hgfs/vm_file/toyc_compiler/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
