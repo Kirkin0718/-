@@ -1,0 +1,70 @@
+// 这是一个ToyC语言的示例程序
+/* 
+   演示各种语言特性
+   包括函数定义、控制流等
+*/
+
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+int fibonacci(int n) {
+    if (n <= 0) {
+        return 0;
+    }
+    if (n == 1) {
+        return 1;
+    }
+    
+    int a = 0;
+    int b = 1;
+    int i = 2;
+    
+    while (i <= n) {
+        int temp = a + b;
+        a = b;
+        b = temp;
+        i = i + 1;
+    }
+    
+    return b;
+}
+
+int main() {
+    int num = 10;
+    int fact_result = factorial(num);
+    int fib_result = fibonacci(num);
+    
+    // 测试各种运算符
+    int sum = fact_result + fib_result;
+    int diff = fact_result - fib_result;
+    int product = fact_result * 2;
+    int quotient = fact_result / 10;
+    int remainder = fact_result % 100;
+    
+    // 测试逻辑运算
+    if (fact_result > fib_result && sum != 0) {
+        int counter = 0;
+        while (counter < 5) {
+            counter = counter + 1;
+            if (counter == 3) {
+                continue;
+            }
+            if (counter >= 4) {
+                break;
+            }
+        }
+    } else {
+        return -1;
+    }
+    
+    // 测试比较运算符
+    if (sum >= 100 || diff <= 50) {
+        return 0;
+    }
+    
+    return fact_result;
+} 
