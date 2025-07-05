@@ -1,0 +1,4 @@
+/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles/toyc.dir
+/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles/test_semantic.dir
+/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles/edit_cache.dir
+/mnt/hgfs/vm_file/toyc_compiler/build/CMakeFiles/rebuild_cache.dir
