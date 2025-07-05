@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/toyc.dir/src/main.cpp.o CMakeFiles/toyc.dir/src/lexer.cpp.o CMakeFiles/toyc.dir/src/parser.cpp.o CMakeFiles/toyc.dir/src/semantic.cpp.o CMakeFiles/toyc.dir/src/codegen.cpp.o -o toyc
